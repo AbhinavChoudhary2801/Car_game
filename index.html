@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realistic Car Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="gameContainer">
+    <div class="scoreBoard">
+      <h2>Speed: <span id="speed">0</span> km/h</h2>
+      <h2>Score: <span id="score">0</span></h2>
+    </div>
+    <div class="road" id="road">
+      <div class="playerCar" id="player"></div>
+    </div>
+    <button id="startBtn">Start Game</button>
+  </div>
+
+  <audio id="bgMusic" src="assets/bg.mp3" loop></audio>
+  <audio id="crashSound" src="assets/crash.mp3"></audio>
+
+  <script src="script.js"></script>
+</body>
+</html>

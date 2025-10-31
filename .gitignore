@@ -1,0 +1,12 @@
+# Ignore system or temporary files
+.DS_Store
+Thumbs.db
+
+# Ignore VSCode or IDE config folders
+.vscode/
+.idea/
+
+# Ignore zip or backup files
+*.zip
+*.rar
+*.bak
