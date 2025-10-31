@@ -7,51 +7,42 @@ const scoreDisplay = document.getElementById("score");
 const speedDisplay = document.getElementById("speed");
 
 let speed = 0;
-let baseSpeed = 3;         // idle speed (~20 km/h)
-let maxSpeed = 10;         // top speed (~60 km/h)
-let accelRate = 0.02;      // acceleration rate
-let decelRate = 0.01;      // normal deceleration
-let brakeRate = 0.08;      // braking rate (strong deceleration)
+let baseSpeed = 3;
+let maxSpeed = 10;
+let accelRate = 0.02;
+let decelRate = 0.01;
+let brakeRate = 0.08;  // strong braking
 let roadPosition = 0;
 let keys = {};
 let score = 0;
 let gameRunning = false;
 let enemies = [];
 let spawnCounter = 0;
+let tiltX = 0;
 
-// 🎵 Sounds
+// Sounds
 const idleSound = new Audio("assets/engine_idle.mp3");
 idleSound.loop = true;
-idleSound.volume = 0.9;
+idleSound.volume = 0.8;
 
 const revSound = new Audio("assets/engine_rev.mp3");
 revSound.loop = true;
 revSound.volume = 1.0;
 
-// 🎶 Background (soft)
 bgMusic.volume = 0.05;
 crashSound.volume = 0.8;
 
-document.addEventListener("keydown", e => {
-  keys[e.key] = true;
+// Buttons
+const btnAccelerate = document.getElementById("btnAccelerate");
+const btnBrake = document.getElementById("btnBrake");
 
-  // accelerate sound
-  if (e.key === "ArrowUp" && gameRunning) {
-    if (revSound.paused) {
-      revSound.currentTime = 0;
-      revSound.play();
-    }
-  }
-});
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-document.addEventListener("keyup", e => {
-  keys[e.key] = false;
-
-  // stop accelerate sound
-  if (e.key === "ArrowUp") {
-    revSound.pause();
-  }
-});
+btnAccelerate.addEventListener("touchstart", () => keys["ArrowUp"] = true);
+btnAccelerate.addEventListener("touchend", () => keys["ArrowUp"] = false);
+btnBrake.addEventListener("touchstart", () => keys["ArrowDown"] = true);
+btnBrake.addEventListener("touchend", () => keys["ArrowDown"] = false);
 
 startBtn.addEventListener("click", startGame);
 
@@ -62,42 +53,35 @@ function startGame() {
   gameRunning = true;
   speed = baseSpeed;
   score = 0;
-  spawnCounter = 0;
   enemies = [];
+  spawnCounter = 0;
   gameLoop();
+}
+
+// 🧭 Gyroscope steering
+if (window.DeviceOrientationEvent) {
+  window.addEventListener("deviceorientation", (e) => {
+    tiltX = e.gamma; // left/right tilt
+  });
 }
 
 function gameLoop() {
   if (!gameRunning) return;
-
   updateSpeed();
   updateRoad();
   movePlayer();
   handleEnemies();
   checkCollision();
   updateScore();
-
   requestAnimationFrame(gameLoop);
 }
 
 function updateSpeed() {
-  if (keys["ArrowUp"]) {
-    // accelerating
-    if (speed < maxSpeed) speed += accelRate;
-  } else if (keys["ArrowDown"]) {
-    // braking
-    if (speed > baseSpeed) speed -= brakeRate;
-  } else {
-    // normal deceleration
-    if (speed > baseSpeed) speed -= decelRate;
-  }
+  if (keys["ArrowUp"]) speed = Math.min(speed + accelRate, maxSpeed);
+  else if (keys["ArrowDown"]) speed = Math.max(speed - brakeRate, baseSpeed);
+  else if (speed > baseSpeed) speed -= decelRate;
 
-  // clamp speed
-  speed = Math.max(baseSpeed, Math.min(speed, maxSpeed));
-
-  // engine pitch changes with speed
   idleSound.playbackRate = 0.8 + (speed / maxSpeed) * 0.4;
-
   speedDisplay.textContent = Math.floor(speed * 10);
 }
 
@@ -108,12 +92,19 @@ function updateRoad() {
 
 function movePlayer() {
   let left = parseInt(window.getComputedStyle(player).left);
+  let turnSpeed = 6;
 
-  // 🕹️ More sensitive turning
-  const turnSpeed = 8;
+  // Gyro steering
+  if (Math.abs(tiltX) > 2) {
+    left += tiltX * 0.5;
+  }
 
-  if (keys["ArrowLeft"] && left > 10) player.style.left = left - turnSpeed + "px";
-  if (keys["ArrowRight"] && left < 330) player.style.left = left + turnSpeed + "px";
+  // Keyboard steering (fallback)
+  if (keys["ArrowLeft"] && left > 10) left -= turnSpeed;
+  if (keys["ArrowRight"] && left < 330) left += turnSpeed;
+
+  left = Math.max(10, Math.min(left, 330));
+  player.style.left = left + "px";
 }
 
 function createEnemy() {
